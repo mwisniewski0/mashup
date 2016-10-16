@@ -1,0 +1,5 @@
+TODO:
+In both dropbox and onedrive, make sure not to throw an error on prepare_mashup if the folder already exists
+Change from processes to threads
+Set up locking system
+Expand number of threads

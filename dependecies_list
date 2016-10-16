@@ -1,0 +1,4 @@
+pip3 install bcrypt
+pip3 install pbkdf2
+pip3 install dropbox
+pip3 install onedrivesdk
