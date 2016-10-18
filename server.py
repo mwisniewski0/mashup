@@ -33,7 +33,12 @@ class RESTServer:
 
             if self.is_encoding_supported(encoding):
                 # decode the body of the request
-                environ['HTTP_BODY'] = environ['wsgi.input'].read(environ['CONTENT_LENGTH']).decode(encoding)
+                environ['HTTP_BODY'] = environ['wsgi.input'].read(environ['CONTENT_LENGTH'])
+                if 'CONTENT_TYPE' in environ and environ['CONTENT_TYPE'].lower() != 'application/octet-stream':
+                    try:
+                        environ['HTTP_BODY'] = environ['HTTP_BODY'].decode(encoding)
+                    except Exception:
+                        return Response.bad_request('Body is not encoded as expected')
                 response = self.dispatcher.dispatch(environ)
                 return response.send(start_response, encoding)
             else:

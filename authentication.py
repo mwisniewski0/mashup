@@ -5,6 +5,7 @@ import crypto_helpers
 import json
 from response import Response
 from exceptions import *
+import globals
 
 
 # privileges format:
@@ -160,7 +161,8 @@ class Authenticator:
             except Exception:
                 raise MashupBadRequestException("The request body does not contain a valid login request")
             session = self.authenticate(login, password)
-            return Response.from_dictionary({'session_id': session.id})
+            globals.get_resource("modules").clouds_manager.load_session(session.id)
+            return Response.from_json({'session_id': session.id})
 
     def authenticate(self, username, password):
         c = self.db.cursor()

@@ -1,6 +1,7 @@
 import http_helpers
 import json
 import abc
+import fs_client
 from getpass import getpass
 
 
@@ -23,6 +24,24 @@ class MenuTransitioner(MenuEntry):
 
     def act(self, common_data):
         return self.next_menu
+
+
+class CloudsViewEntry(MenuEntry):
+    def __init__(self, title):
+        super().__init__(title)
+
+    def act(self, common_data):
+        response = http_helpers.auth_http_req(common_data['conn'],common_data['session_id'], "GET", "/clouds/list")
+        print(response)
+        # response = json.loads(response)
+        # table = [['id', 'name', 'type', 'taken', 'quota', 'percent taken']]
+        # for row in response:
+        #     table.append([row['id'], row['name'], row['taken'], row['quota'], row['taken']/row['quota'] * 100])
+        #
+        # longest_name_length = max([len(row['name'])])
+        # for row in table:
+        #     print_row = "{:10s} {:3d}  {:7.2f}".format()
+        return None
 
 
 class LoginEntry(MenuEntry):
@@ -49,6 +68,13 @@ class LoginEntry(MenuEntry):
                 print('Try again')
         common_data['session_id'] = session_id
         return self.main_menu
+
+class FSEntry(MenuEntry):
+    def __init__(self, title):
+        super().__init__(title)
+
+    def act(self, common_data):
+        fs_client.FileSystemClient(common_data['conn'], common_data['session_id']).run()
 
 class AddCloudEntry(MenuEntry):
     def __init__(self, title, cloud_resource):
@@ -132,7 +158,7 @@ class Client:
 
     def prepare_main_menu(self):
         entries = []
-        entries.append(MenuTransitioner('Access file system', None))
+        entries.append(FSEntry('Access file system'))
         entries.append(MenuTransitioner('Manage clouds', self.menus['clouds']))
         entries.append(MenuTransitioner('Account settings', None))
         entries.append(LogoutEntry('Log out', self.menus['login']))
@@ -146,7 +172,7 @@ class Client:
         self.menus['add_cloud'] = Menu('Add a cloud', entries)
 
         entries = []
-        entries.append(MenuTransitioner('View clouds', None))
+        entries.append(CloudsViewEntry('View clouds'))
         entries.append(MenuTransitioner('Add a cloud', self.menus['add_cloud']))
         entries.append(MenuTransitioner('Remove a cloud', None))
         entries.append(MenuTransitioner('Back', self.menus['main']))

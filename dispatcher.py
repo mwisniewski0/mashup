@@ -9,7 +9,7 @@ class Dispatcher:
         super().__init__()
 
     def dispatch(self, request_info):
-        modules = globals.get_resourse("modules")
+        modules = globals.get_resource("modules")
 
         session_id = request_info['HTTP_X_SESSION_ID'] if 'HTTP_X_SESSION_ID' in request_info else ""
 
@@ -29,8 +29,9 @@ class Dispatcher:
                 if resource_name == 'clouds':
                     return modules.clouds_manager.handle_cloud_request(session_id, uri_parts,request_info['REQUEST_METHOD'],
                                                           params, request_info['HTTP_BODY'], request_info['HEADERS'])
-                elif resource_name == 'accounts':
-                    return Response.from_text('ACCOUNTS')
+                elif resource_name == 'files':
+                    return modules.file_system.accept_request(session_id, request_info['REQUEST_METHOD'], uri_parts,
+                                                              params, request_info['HTTP_BODY'], request_info['HEADERS'])
                 elif resource_name == 'login':
                     return modules.authenticator.accept_login_connection(
                         request_info['REQUEST_METHOD'], request_info['HTTP_BODY'])
@@ -42,4 +43,3 @@ class Dispatcher:
             traceback.print_exc()
             print(e.args)
             return Response.internal_error()
-        return Response.ok()

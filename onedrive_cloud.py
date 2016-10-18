@@ -5,6 +5,7 @@ import json
 from response import Response
 import globals
 from exceptions import *
+import traceback
 import onedrivesdk
 
 
@@ -24,8 +25,8 @@ class OneDrive(cloud_account.CloudAccount):
             auth_data = oauth_helpers.finish_authorization(cls, 'https://login.live.com/oauth20_token.srf',
                   query_params['code'], globals.get_constant('ONEDRIVE_PUBLIC'),
                   globals.get_constant('ONEDRIVE_PRIVATE'), query_params['state'])
-            globals.get_resourse("modules").clouds_manager.add_cloud_authentication(cls, auth_data['mashup_session_id'],
-                                                                            auth_data['refresh_token'].encode('utf-8'))
+            globals.get_resource("modules").clouds_manager.add_cloud_authentication(cls, auth_data['mashup_session_id'],
+                                                                                    auth_data['refresh_token'].encode('utf-8'))
             return Response.from_text("This OneDrive account has been added to your MashUp")
         else:
             raise MashupNameException("Cloud resource not found")
@@ -35,7 +36,7 @@ class OneDrive(cloud_account.CloudAccount):
         return http_helpers.http_req(self.connection,method,self.api_path + path, body, query, headers, return_full_response)
 
     def reauthenticate(self):
-        clouds_manager = globals.get_resourse("modules").clouds_manager
+        clouds_manager = globals.get_resource("modules").clouds_manager
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         params = {'client_id': globals.get_constant("ONEDRIVE_PUBLIC"),
                   'redirect_uri': clouds_manager.get_cloud_uri(OneDrive)+'/oauth_authenticate',
@@ -48,21 +49,27 @@ class OneDrive(cloud_account.CloudAccount):
 
     def authenticate(self, authentication_data):
         # create connection for manual http requests (onedrivesdk turns out to be insufficient)
-        api_server = 'https://api.onedrive.com'
+        self.api_server = 'https://api.onedrive.com'
         self.api_path = '/v1.0/'
-        self.connection = http_helpers.start_connection(api_server)
         self.refresh_token = authentication_data.decode('utf-8')
+        self.reconnect()
         self.reauthenticate()
+
+    def reconnect(self):
+        self.connection = http_helpers.start_connection(self.api_server)
 
     def request_template(self, action):
         trials = 0
-        while trials < 2:
+        while trials < 8:
             try:
+                trials += 1
                 return action()
             # find the actual exception name for lack of access
             except MashupException as e:
                 raise e
             except Exception as e:
+                traceback.print_exc()
+                self.reconnect()
                 self.reauthenticate()
         raise MashupCloudOperationException("OneDrive request failed")
 
@@ -76,7 +83,7 @@ class OneDrive(cloud_account.CloudAccount):
             data, full_response = self.http_req("GET", 'drive/special/approot:/'+file_path+':/content',return_full_response=True)
             if full_response.status == 302:
                 location = full_response.getheader('Location')
-                data, response =  http_helpers.direct_http_req(location, "GET", return_full_response=True)
+                data, response = http_helpers.direct_http_req(location, "GET", return_full_response=True)
                 if response.status >= 300:
                     raise MashupCloudOperationException('Download failed')
                 return data
@@ -88,6 +95,16 @@ class OneDrive(cloud_account.CloudAccount):
         def action():
             return self.http_req("DELETE", 'drive/special/approot:/'+file_path)
         self.request_template(action)
+
+    def exists(self, file_path):
+        def action():
+            data, full_response = self.http_req("GET", 'drive/special/approot:/'+file_path+':/content',return_full_response=True)
+            if full_response.status == 302:
+                return True
+            elif full_response.status == 404:
+                return False
+            else:
+                raise MashupCloudOperationException('Check failed')
 
     def prepare_mashup(self):
         # OneDrive creates an app folder for us

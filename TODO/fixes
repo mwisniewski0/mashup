@@ -1,5 +1,7 @@
 TODO:
 In both dropbox and onedrive, make sure not to throw an error on prepare_mashup if the folder already exists
 Change from processes to threads
-Set up locking system
+Set up locking system for multiple threads
 Expand number of threads
+In fs_client if in cd <path> path contains a file which is a json containing "children", fs_client will think that
+    it properly entered a directory

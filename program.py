@@ -10,6 +10,7 @@ import globals
 from clouds import CloudsManager
 from authentication import Authenticator
 from dispatcher import Dispatcher
+from file_system import FileSystem
 
 
 def number_of_workers():
@@ -62,19 +63,28 @@ def parse_args(arguments):
     return result
 
 class ProgramModules:
-    def __init__(self, authenticator, clouds_manager):
+    def __init__(self, authenticator, clouds_manager, file_system):
         self.authenticator = authenticator
         self.clouds_manager = clouds_manager
+        self.file_system = file_system
 
 if __name__ == '__main__':
     options = parse_args(sys.argv)
     sql_db = sqlite3.connect(options['sqlfile'])
 
+    # c = sql_db.cursor()
+    # print(c.execute("SELECT * FROM fs_items").fetchall())
+    # print(c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, ?)", (None, 'name', 'root','file')).fetchall())
+    # print(c.execute("SELECT * FROM fs_items").fetchall())
+    # c.close()
+    # sql_db.rollback()
+
     authenticator = Authenticator(sql_db)
     cloud_manager = CloudsManager(sql_db)
+    file_system = FileSystem(sql_db)
     dispatcher = Dispatcher()
 
-    modules = ProgramModules(authenticator, cloud_manager)
+    modules = ProgramModules(authenticator, cloud_manager, file_system)
     globals.add_resource('modules', modules)
 
     try:
@@ -84,7 +94,6 @@ if __name__ == '__main__':
         sql_db.rollback()
         traceback.print_exc()
         print(e.args)
-
 
     server = server.RESTServer(dispatcher)
 

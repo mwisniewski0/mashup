@@ -24,7 +24,7 @@ def start_authorization(cls, session_id, client_id, uri, additional_params={}, r
     url_params = additional_params
     url_params['client_id'] =  client_id
     url_params['response_type'] = 'code'
-    url_params['redirect_uri'] = globals.get_resourse("modules").clouds_manager.get_cloud_uri(cls) + "/" + redirect_path
+    url_params['redirect_uri'] = globals.get_resource("modules").clouds_manager.get_cloud_uri(cls) + "/" + redirect_path
     url_params['state'] = csrf_token
 
     uri = uri + '?' + urllib.parse.urlencode(url_params)
@@ -32,7 +32,7 @@ def start_authorization(cls, session_id, client_id, uri, additional_params={}, r
     result = {}
     result['authorize_uri'] = uri
     api_requests[csrf_token]['redirect_uri'] = url_params['redirect_uri']
-    return Response.from_dictionary(result)
+    return Response.from_json(result)
 
 def finish_authorization(cls, oauth_token_link, code, client_id, client_secret, csrf_token):
     try:

@@ -24,8 +24,8 @@ class Dropbox(cloud_account.CloudAccount):
             auth_data = oauth_helpers.finish_authorization(cls, 'https://api.dropbox.com/1/oauth2/token',
                   query_params['code'], globals.get_constant('DROPBOX_PUBLIC'),
                   globals.get_constant('DROPBOX_PRIVATE'), query_params['state'])
-            globals.get_resourse("modules").clouds_manager.add_cloud_authentication(cls, auth_data['mashup_session_id'],
-                                                                              auth_data['access_token'].encode('utf-8'))
+            globals.get_resource("modules").clouds_manager.add_cloud_authentication(cls, auth_data['mashup_session_id'],
+                                                                                    auth_data['access_token'].encode('utf-8'))
             return Response.from_text("This Dropbox account has been added to your MashUp")
         else:
             raise MashupNameException("Cloud resource not found")
@@ -73,6 +73,13 @@ class Dropbox(cloud_account.CloudAccount):
             raise MashupAccessException("Authentication for Dropbox failed")
         except Exception as e:
             raise MashupCloudOperationException("Removal from Dropbox has failed")
+
+    def exists(self, file_path):
+        try:
+            self.dbx.files_get_metadata(self.get_mashup_path(file_path))
+            return True
+        except:
+            return False
 
     def prepare_mashup(self):
         try:

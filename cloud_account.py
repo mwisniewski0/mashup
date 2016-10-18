@@ -64,6 +64,16 @@ class CloudAccount(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
+    def exists(self, file_path):
+        """
+        Check if a file exists in the cloud's mashup catalog.
+        :param file_path: Path to the file in the cloud's mashup catalog
+        :raise MashupAccessException: if authentication failed
+        :raise MashupCloudOperationException: if check failed
+        """
+        return
+
+    @abc.abstractmethod
     def prepare_mashup(self):
         """
         Prepares the cloud to be used with mashup
