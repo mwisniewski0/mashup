@@ -87,14 +87,6 @@ if __name__ == '__main__':
     modules = ProgramModules(authenticator, cloud_manager, file_system)
     globals.add_resource('modules', modules)
 
-    try:
-        authenticator.add_user("root", "password", [{'user': 'all', 'privilege': 'all'}])
-        authenticator.add_user("mike", "password2", [{'user': 'mike', 'privilege': 'all'}])
-    except Exception as e:
-        sql_db.rollback()
-        traceback.print_exc()
-        print(e.args)
-
     server = server.RESTServer(dispatcher)
 
     mode = 'gunicorn'

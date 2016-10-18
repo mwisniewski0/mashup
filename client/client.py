@@ -69,12 +69,36 @@ class LoginEntry(MenuEntry):
         common_data['session_id'] = session_id
         return self.main_menu
 
+class RegisterEntry(MenuEntry):
+    def __init__(self, title):
+        super().__init__(title)
+
+    def act(self, common_data):
+        print('Registration form\n' + separator())
+
+        username = input('Username: ')
+        if username == '':
+            return None
+
+        password = input('Password: ')
+        request_body = {'username': username, 'password': password}
+        try:
+            http_helpers.http_req(common_data['conn'], "POST", "/register", request_body)
+        except Exception as e:
+            print('Error while registering:')
+            if len(e.args) >= 2:
+                print(e.args[1])
+
+        return None
+
+
 class FSEntry(MenuEntry):
     def __init__(self, title):
         super().__init__(title)
 
     def act(self, common_data):
         fs_client.FileSystemClient(common_data['conn'], common_data['session_id']).run()
+
 
 class AddCloudEntry(MenuEntry):
     def __init__(self, title, cloud_resource):
@@ -110,7 +134,7 @@ class LogoutEntry(MenuEntry):
         self.previous_menu = previous_menu
 
     def act(self, common_data):
-        # TODO: send logout request
+        http_helpers.auth_http_req(common_data['conn'], common_data['session_id'], "POST", "/logout")
         del common_data['session_id']
         return self.previous_menu
 
@@ -153,6 +177,7 @@ class Client:
     def prepare_login_menu(self):
         entries = []
         entries.append(LoginEntry('Log in', self.menus['main']))
+        entries.append(RegisterEntry('Register'))
         entries.append(ExitEntry('Exit'))
         self.menus['login'].set_menu_entries(entries)
 
@@ -174,7 +199,7 @@ class Client:
         entries = []
         entries.append(CloudsViewEntry('View clouds'))
         entries.append(MenuTransitioner('Add a cloud', self.menus['add_cloud']))
-        entries.append(MenuTransitioner('Remove a cloud', None))
+        #entries.append(MenuTransitioner('Remove a cloud', None))
         entries.append(MenuTransitioner('Back', self.menus['main']))
         self.menus['clouds'].set_menu_entries(entries)
 

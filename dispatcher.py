@@ -35,6 +35,13 @@ class Dispatcher:
                 elif resource_name == 'login':
                     return modules.authenticator.accept_login_connection(
                         request_info['REQUEST_METHOD'], request_info['HTTP_BODY'])
+                elif resource_name == 'logout':
+                    modules.authenticator.close_session(session_id)
+                    modules.clouds_manager.close_session(session_id)
+                    modules.file_system.close_session(session_id)
+                    return Response.ok()
+                elif resource_name == 'register':
+                    return modules.authenticator.accept_register_request(request_info['HTTP_BODY'])
                 else:
                     raise MashupNameException('The selected resource does not exist')
         except MashupException as e:

@@ -3,6 +3,7 @@ import pbkdf2
 import random
 import crypto_helpers
 import json
+import urllib.parse
 from response import Response
 from exceptions import *
 import globals
@@ -107,6 +108,23 @@ class Authenticator:
     def get_valid_username_chars(self):
         return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
+    def close_session(self, session_id):
+        if session_id in self.active_sessions:
+            del self.active_sessions[session_id]
+        else:
+            return MashupBadRequestException("Session does not exist")
+
+    def accept_register_request(self, body):
+        req = {k: v for k, v in urllib.parse.parse_qsl(body)}
+        if 'username' not in req:
+            raise MashupBadRequestException("Username needs to be provided for registration")
+        if 'password' not in req:
+            raise MashupBadRequestException("Password needs to be provided for registration")
+
+        privileges = [{'user': req['username'], 'privilege': 'all'}]
+        self.add_user(req['username'], req['password'], privileges)
+        return Response.ok()
+
     def add_user(self, username, password, privileges):
         # validate username
         if (username in self.get_reserved_usernames()):
@@ -123,10 +141,10 @@ class Authenticator:
                 raise MashupAccessException("Username can only contain alpha-numeric characters and the underscore", "")
 
         c = self.db.cursor()
-        c.execute("SELECT username FROM users WHERE username=?", (username,))
+        name_taken = len(c.execute("SELECT username FROM users WHERE username=?", (username,)).fetchall()) > 0
         c.close()
         self.db.commit()
-        if c.rowcount > 0:
+        if name_taken:
             raise MashupAccessException("Username is not available",
                                   "User tried to take a username that has already been taken: " + username)
         # username is valid

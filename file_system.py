@@ -75,6 +75,14 @@ class FileSystem:
         c.close()
         self.db.commit()
 
+    def close_session(self, session_id):
+        if session_id in self.upload_sessions:
+            for k, v in self.upload_sessions[session_id].items():
+                self.cancel_upload_session(session_id, k)
+            del self.upload_sessions[session_id]
+        else:
+            return MashupBadRequestException("Session does not exist")
+
     def get_root_id(self):
         return -1
 

@@ -39,6 +39,12 @@ class CloudsManager:
             raise Exception("Invalid cloud class")
         return globals.get_constant("SERVICE_ADDRESS")+"/clouds/"+cloud_type
 
+    def close_session(self, session_id):
+        if session_id in self.session_clouds:
+            del self.session_clouds[session_id]
+        else:
+            return MashupBadRequestException("Session does not exist")
+
     def handle_cloud_request(self, session_id, path_segments, method, query_params, body, headers):
         if len(path_segments) > 0:
             if path_segments[0] == 'list':
