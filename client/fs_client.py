@@ -5,15 +5,6 @@ import shlex
 import traceback
 
 
-# available commands:
-# l - local
-# r - remote
-# cd path - go to path
-# ls - list current folder
-# fetch remote_path local_path - download file at remote_path to local_path
-# store local_path remote_path- upload file from local_path to remote_path
-
-
 def separator():
     return '---------------------------------------------------'
 
@@ -87,14 +78,18 @@ class FileSystemClient:
         else:
             if len(args) > 0:
                 new_path = self.transform_path(self.cur_dir, args[0])
-                try:
-                    # check if path is a folder. If it's not, exception will be thrown
-                    response = http_helpers.auth_http_req(self.conn, self.ses_id, "GET", "/files/" + "/".join(new_path))
-                    children = json.loads(response)['children']
 
-                    self.cur_dir = new_path
-                except Exception:
+                # check if path is a folder. If it's not, exception will be thrown
+                data, response = http_helpers.auth_http_req(self.conn, self.ses_id, "GET", "/files/" + "/".join(new_path),
+                                                     None, {'length': 0}, {}, True)
+                if response.status >= 300:
                     print('Invalid path. Try again')
+                    return
+                if response.getheader('X_FILE_SIZE') is not None:
+                    print('Invalid path. Try again')
+                    return
+
+                self.cur_dir = new_path
             else:
                 self.cur_dir = []
 
@@ -144,6 +139,30 @@ class FileSystemClient:
                 if len(e.args) >= 2:
                     print('Information from the service: ', e.args[1])
 
+    def mv(self, args):
+        if len(args) < 2:
+            print('You need to specify both from and to path')
+            return
+        if self.mode == 'l':
+            try:
+                os.rename(args[0], args[1])
+            except Exception:
+                print("Could not move the item")
+        else:
+            from_path = self.transform_path(self.cur_dir, args[0])
+            to_path = self.transform_path(self.cur_dir, args[1])
+            if from_path[0] == '':
+                from_path = from_path[1:]
+            if to_path[0] == '':
+                to_path = to_path[1:]
+            try:
+                http_helpers.auth_http_req(self.conn, self.ses_id, "PUT", "files/" + "/".join(to_path),
+                                           "/".join(from_path), {'item_type':'other_item'})
+            except Exception as e:
+                print('Moving failed')
+                if len(e.args) >= 2:
+                    print('Information from the service: ', e.args[1])
+
     def fetch(self, args):
         if len(args) == 0:
             print('You need to specify the remote path to file')
@@ -176,7 +195,7 @@ class FileSystemClient:
             try:
                 with open("/"+"/".join(local_path), "wb") as f:
                     current_start = 0
-                    length = 2 ** 21
+                    length = 2 ** 22
                     print("Starting the download. File size: " + str(file_size) + " bytes")
                     while current_start < file_size:
                         self.print_progress_bar(current_start/file_size, 20)
@@ -228,7 +247,7 @@ class FileSystemClient:
                                                b'', {'session_action': 'end', 'item_type': 'file'})
                     print('\rUpload finished')
             except Exception:
-                traceback.print_exc()
+                #traceback.print_exc()
                 print("\rUpload failed")
 
     def print_help_string(self):
@@ -238,6 +257,7 @@ class FileSystemClient:
               "cd <path> - change current directory to <path>\n"
               "ls - list contents of the current catalog\n"
               "rm <path> - removes the item at <path>\n"
+              "mv <from> <to> - moves an item at <from> to <to>\n"
               "fetch <remote_path> <local_path> - download file from <remote_path> to <local_path>\n"
               "                                   if <local_path> is omitted, current directory is assumed\n"
               "store <local_path> <remote_path> - upload file from <local_path> to <remote_path>\n"
@@ -266,6 +286,8 @@ class FileSystemClient:
                     self.rm(args)
                 elif command.lower() == 'mkdir':
                     self.mkdir(args)
+                elif command.lower() == 'mv':
+                    self.mv(args)
                 elif command.lower() == 'fetch':
                     self.fetch(args)
                 elif command.lower() == 'store':

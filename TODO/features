@@ -1,7 +1,4 @@
 TODO:
-Don't create file duplicates
-uploading files to cloud should automatically create folders
-rename
 clouds_manager -> Manage clouds
 cache files from cloud (at least last file for each session)
 Display the user's clouds nicely

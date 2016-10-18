@@ -25,9 +25,7 @@ class FileSystem:
                 c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, \"file\")", (parent_id, name, username))
                 file_id = c.lastrowid
             else:
-                if previous_file[0][1] == 'folder':
-                    raise MashupBadRequestException("Requested item is not a file")
-                file_id = previous_file[0][0]
+                raise MashupBadRequestException("File already exists. Try removing it first")
             c.close()
             self.db.commit()
 
@@ -93,14 +91,10 @@ class FileSystem:
         elif method == 'put':
             if 'item_type' not in query_params:
                 raise MashupBadRequestException("You need to specify item_type")
-            is_folder = query_params['item_type'] == 'folder'
-            # make sure proper parameter was specified
-            if not is_folder and query_params['item_type'] != 'file':
-                raise MashupBadRequestException("Incorrect item_type")
 
-            if is_folder:
+            if query_params['item_type'] == 'folder':
                 self.create_catalog(session_id, path_segments)
-            else:
+            elif query_params['item_type'] == 'file':
                 self.create_catalog(session_id, path_segments[:len(path_segments)-1], False)
                 if 'session_action' not in query_params:
                     raise MashupBadRequestException("You need to specify session_action")
@@ -115,6 +109,17 @@ class FileSystem:
                     self.end_upload_session(session_id, path_segments)
                 elif query_params['session_action'] == 'cancel':
                     self.cancel_upload_session(session_id, path_segments)
+            elif query_params['item_type'] == 'other_item':
+                from_path = body.split('/')
+
+                # take care of the root case
+                if len(from_path) == 1 and from_path[0] == '':
+                    from_path = []
+
+                to_path = path_segments[:]
+                self.move_item(session_id, from_path, to_path)
+            else:
+                raise MashupBadRequestException("Incorrect item_type")
             return Response.ok()
         elif method == 'delete':
             self.remove(session_id, path_segments)
@@ -133,6 +138,21 @@ class FileSystem:
         for child in children:
             result['children'].append({'name': child[0], 'type': child[1]})
         return result
+
+    def move_item(self, session_id, path_from, path_to):
+        item_from = self.get_item(session_id, path_from)
+        current_path_holder = self.get_item(session_id, path_to, None, False)
+        if current_path_holder != None:
+            raise MashupBadRequestException("Requested path has already been taken")
+
+        self.create_catalog(session_id, path_to[:len(path_to) - 1], False)
+        item_to = self.get_item(session_id, path_to[:len(path_to)-1])
+
+        c = self.db.cursor()
+        c.execute('UPDATE fs_items SET parent=?, name=? WHERE id=?', (item_to['id'], path_to[len(path_to)-1],
+                                                                         item_from['id']))
+        c.close()
+        self.db.commit()
 
     def retrieve_file_fragment(self, session_id, file_id, byte_start, length):
         if length == -1:
@@ -214,7 +234,7 @@ class FileSystem:
             else:
                 return {'id': item_id, 'is_folder': False}
         else:
-            return self.get_item(session_id, path[1:], item_id)
+            return self.get_item(session_id, path[1:], item_id, throw_on_not_found)
 
     def create_catalog(self, session_id, path, throw_on_existing = True):
         parent_id = self.get_root_id()
