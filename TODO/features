@@ -1,8 +1,8 @@
 TODO:
-List all the user's clouds
-clouds_manager -> Manage quota
-don't use session_id to identify the user, instead use accounts/username/, this way you can do sharing
+Don't create file duplicates
+uploading files to cloud should automatically create folders
+rename
+clouds_manager -> Manage clouds
 cache files from cloud (at least last file for each session)
-rename catalogs
-client create catalog
-uploading files to cloud should automatically create
+Display the user's clouds nicely
+don't use session_id to identify the user, instead use accounts/username/, this way you can do sharing

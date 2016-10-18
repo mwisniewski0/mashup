@@ -101,6 +101,7 @@ class FileSystem:
             if is_folder:
                 self.create_catalog(session_id, path_segments)
             else:
+                self.create_catalog(session_id, path_segments[:len(path_segments)-1], False)
                 if 'session_action' not in query_params:
                     raise MashupBadRequestException("You need to specify session_action")
                 if query_params['session_action'] not in ['add','end','cancel']:
@@ -215,7 +216,7 @@ class FileSystem:
         else:
             return self.get_item(session_id, path[1:], item_id)
 
-    def create_catalog(self, session_id, path):
+    def create_catalog(self, session_id, path, throw_on_existing = True):
         parent_id = self.get_root_id()
         folders_to_create = []
 
@@ -224,7 +225,7 @@ class FileSystem:
 
         for i in range(len(path)):
             segment = path[i]
-            result = self.get_item(session_id, [segment], parent_id)
+            result = self.get_item(session_id, [segment], parent_id, False)
             if result is None:
                 folders_to_create = path[i:]
                 break
@@ -235,7 +236,10 @@ class FileSystem:
                     raise MashupBadRequestException('Path contains a file in it')
 
         if len(folders_to_create) == 0:
-            raise MashupBadRequestException('This folder already exists')
+            if throw_on_existing:
+                raise MashupBadRequestException('This folder already exists')
+            else:
+                return None
 
         c = self.db.cursor()
         for folder in folders_to_create:

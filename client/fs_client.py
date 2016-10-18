@@ -103,6 +103,47 @@ class FileSystemClient:
         empty_count = size - full_count
         print("\r["+'-'*full_count + ' '*empty_count + '] ' + str(int(fraction*100))+"%" , end="")
 
+    def rm(self, args):
+        if len(args) == 0:
+            print('You need to specify the path to file')
+            return
+        if self.mode == 'l':
+            try:
+                os.remove(args[0])
+            except Exception:
+                print("Could not remove the item")
+        else:
+            remote_path = self.transform_path(self.cur_dir, args[0])
+            if remote_path[0] == '':
+                remote_path = remote_path[1:]
+            try:
+                http_helpers.auth_http_req(self.conn, self.ses_id, "DELETE", "files/" + "/".join(remote_path))
+            except Exception as e:
+                print('Removal failed')
+                if len(e.args) >= 2:
+                    print('Information from the service: ', e.args[1])
+
+    def mkdir(self, args):
+        if len(args) == 0:
+            print('You need to specify the path for the catalog')
+            return
+        if self.mode == 'l':
+            try:
+                os.mkdir(args[0])
+            except Exception:
+                print("Could not create the catalog")
+        else:
+            remote_path = self.transform_path(self.cur_dir, args[0])
+            if remote_path[0] == '':
+                remote_path = remote_path[1:]
+            try:
+                http_helpers.auth_http_req(self.conn, self.ses_id, "PUT", "files/" + "/".join(remote_path),None,
+                                           {'item_type':'folder'})
+            except Exception as e:
+                print('Directory creation failed')
+                if len(e.args) >= 2:
+                    print('Information from the service: ', e.args[1])
+
     def fetch(self, args):
         if len(args) == 0:
             print('You need to specify the remote path to file')
@@ -193,9 +234,10 @@ class FileSystemClient:
     def print_help_string(self):
         print("Available commands:\n"
               "l - switch to local mode and perform cd and ls locally\n"
-              "r - switch to remote mode and perform cd and ls remotely\n"
+              "r - switch to remote mode and perform cd, ls and rm remotely\n"
               "cd <path> - change current directory to <path>\n"
               "ls - list contents of the current catalog\n"
+              "rm <path> - removes the item at <path>\n"
               "fetch <remote_path> <local_path> - download file from <remote_path> to <local_path>\n"
               "                                   if <local_path> is omitted, current directory is assumed\n"
               "store <local_path> <remote_path> - upload file from <local_path> to <remote_path>\n"
@@ -220,6 +262,10 @@ class FileSystemClient:
                     self.ls(args)
                 elif command.lower() == 'cd':
                     self.cd(args)
+                elif command.lower() == 'rm':
+                    self.rm(args)
+                elif command.lower() == 'mkdir':
+                    self.mkdir(args)
                 elif command.lower() == 'fetch':
                     self.fetch(args)
                 elif command.lower() == 'store':
