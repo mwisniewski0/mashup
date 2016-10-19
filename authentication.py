@@ -131,10 +131,10 @@ class Authenticator:
             raise MashupAccessException("Username is not available",
                                           "User tried to take a reserved username: " + username)
         if (len(username) < self.get_min_username_length()):
-            raise MashupAccessException("Username needs to be at least " + self.get_min_username_length()
+            raise MashupAccessException("Username needs to be at least " + str(self.get_min_username_length())
                                         + " characters long", "")
         if (len(username) > self.get_max_username_length()):
-            raise MashupAccessException("Username needs to be at most " + self.get_max_username_length()
+            raise MashupAccessException("Username needs to be at most " + str(self.get_max_username_length())
                                         + " characters long", "")
         for char in username:
             if char not in self.get_valid_username_chars():

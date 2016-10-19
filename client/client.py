@@ -185,7 +185,7 @@ class Client:
         entries = []
         entries.append(FSEntry('Access file system'))
         entries.append(MenuTransitioner('Manage clouds', self.menus['clouds']))
-        entries.append(MenuTransitioner('Account settings', None))
+        # TODO: entries.append(MenuTransitioner('Account settings', None))
         entries.append(LogoutEntry('Log out', self.menus['login']))
         self.menus['main'].set_menu_entries(entries)
 
@@ -199,7 +199,7 @@ class Client:
         entries = []
         entries.append(CloudsViewEntry('View clouds'))
         entries.append(MenuTransitioner('Add a cloud', self.menus['add_cloud']))
-        #entries.append(MenuTransitioner('Remove a cloud', None))
+        # TODO: entries.append(MenuTransitioner('Remove a cloud', None))
         entries.append(MenuTransitioner('Back', self.menus['main']))
         self.menus['clouds'].set_menu_entries(entries)
 
@@ -215,7 +215,7 @@ class Client:
         self.prepare_clouds_menu()
 
     def run(self):
-        print('This is MashUp 0.1')
+        print('This is MashUp v0.1')
         print(separator())
         while 'exit' not in self.common_data:
             result = self.current_menu.execute(self.common_data)
