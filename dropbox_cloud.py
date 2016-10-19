@@ -58,7 +58,7 @@ class Dropbox(cloud_account.CloudAccount):
 
     def upload(self, file_path, file_data):
         try:
-            self.dbx.files_upload(file_data, self.get_mashup_path(file_path))
+            self.dbx.files_upload(file_data, self.get_mashup_path(file_path), dropbox.files.WriteMode('overwrite', None))
         except dropbox.exceptions.AuthError as e:
             print('Authentication failed')
             raise MashupAccessException("Authentication for Dropbox failed")

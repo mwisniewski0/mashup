@@ -105,10 +105,13 @@ class OneDrive(cloud_account.CloudAccount):
                 return False
             else:
                 raise MashupCloudOperationException('Check failed')
+        return self.request_template(action)
 
     def prepare_mashup(self):
-        # OneDrive creates an app folder for us
-        return
+        def action():
+            # this will create the approot
+            return self.http_req('GET', 'drive/special/approot')
+        self.request_template(action)
 
     def clean_mashup(self):
         def action():

@@ -1,0 +1,19 @@
+TODO:
+-> Test registration and logging in
+    -> Register a new user
+    -> Check for duplicate users, illegal characters, reserved names
+-> Test adding clouds
+    -> Generate links for both DropBox and OneDrive and open them
+    ->
+-> Test file system:
+    -> Create folders:
+        -> Create a multi-level folder and check if it exists
+        -> Try to create a folder that already exists and check for the error
+    -> Storing files:
+        -> Store file and try to fetch it
+        -> Store a file that already exists
+        -> Store a file to a multi level path
+    -> Fetching files:
+        -> Fetch a file
+        -> Fetch a non-existent file
+
