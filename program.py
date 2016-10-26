@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     if mode == 'gunicorn':
         options = {
-            'bind': '%s:%s' % ('127.0.0.1', '8080'),
+            'bind': '%s:%s' % ('0.0.0.0', '8080'),
             'workers': 1,#number_of_workers(),
             'certfile': options['certfile'],
             'keyfile': options['keyfile']
