@@ -6,7 +6,6 @@ from response import Response
 import globals
 from exceptions import *
 import traceback
-import onedrivesdk
 
 
 class OneDrive(cloud_account.CloudAccount):
