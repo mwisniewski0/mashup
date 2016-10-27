@@ -111,6 +111,9 @@ class CloudsManager:
     def store_file(self, session_id, cloud_id, path, content):
         self.get_cloud(session_id, cloud_id).upload(path, content)
 
+    def retrieve_file_part(self, session_id, cloud_id, path, offset = 0, length = None):
+        return self.get_cloud(session_id, cloud_id).download_part(path, offset, length)
+
     def retrieve_file(self, session_id, cloud_id, path):
         return self.get_cloud(session_id, cloud_id).download(path)
 

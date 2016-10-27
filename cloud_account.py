@@ -43,6 +43,19 @@ class CloudAccount(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
+    def download_part(self, file_path, offset=0, length=None):
+        """
+        Downloads a file from the cloud's mashup catalog.
+        :param file_path: Path to the file in the cloud's mashup catalog
+        :param offset: index of the first byte to be retrieved from the cloud
+        :param length: number of bytes to be retrieved from the cloud. None means all the bytes
+        :return: File contents in a binary form
+        :raise MashupAccessException: if authentication failed
+        :raise MashupCloudOperationException: if download failed
+        """
+        return
+
+    @abc.abstractmethod
     def upload(self, file_path, file_data):
         """
         Downloads a file from the cloud's mashup catalog.

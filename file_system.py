@@ -172,7 +172,7 @@ class FileSystem:
             return b''
 
         c = self.db.cursor()
-        c.execute("SELECT cloud_id, path, offset, offset+len FROM fs_disassembly WHERE file_id=? AND offset < ? AND offset+len >= ? ORDER BY offset",
+        c.execute("SELECT cloud_id, path, offset, offset+len FROM fs_disassembly WHERE file_id=? AND offset < ? AND offset+len > ? ORDER BY offset",
                   (file_id, byte_end, byte_start))
         fragments = c.fetchall()
         c.close()
@@ -185,15 +185,15 @@ class FileSystem:
             start = fragment[2]
             original_start = start
             end = fragment[3]
-            original_end = end
-            frag_content = clouds_manager.retrieve_file(session_id, cloud_id, path)
 
             if start < byte_start:
                 start = byte_start
-            if end > byte_end:
-                end = byte_end
+            end = min([end, byte_end])
 
-            file_contents += frag_content[(start - original_start):(end - original_start)]
+            frag_content = clouds_manager.retrieve_file_part(session_id, cloud_id, path, start - original_start,
+                                                             end - original_start)
+
+            file_contents += frag_content
         return file_contents
 
     def get_file_size(self, file_id):

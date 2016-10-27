@@ -1,9 +1,9 @@
 TODO:
 clouds_manager -> Manage clouds
 removing clouds
-cache files from cloud (at least last file for each session)
 Display the user's clouds nicely
 don't use session_id to identify the user, instead use accounts/username/, this way you can do sharing
+cache files from cloud
 
 REACH GOALS:
 Compression - and choosing appropriate compression

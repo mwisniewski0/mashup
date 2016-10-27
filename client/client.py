@@ -223,5 +223,5 @@ class Client:
                 self.current_menu = result
 
 if __name__ == '__main__':
-    client = Client("https://localhost:8080")
+    client = Client(input("MashUp address: "))
     client.run()

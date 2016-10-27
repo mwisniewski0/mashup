@@ -90,6 +90,20 @@ class OneDrive(cloud_account.CloudAccount):
                 raise MashupCloudOperationException('Download failed')
         return self.request_template(action)
 
+    def download_part(self, file_path, offset=0, length=None):
+        def action():
+            data, full_response = self.http_req("GET", 'drive/special/approot:/'+file_path+':/content',return_full_response=True)
+            if full_response.status == 302:
+                location = full_response.getheader('Location')
+                headers = {'RANGE':"bytes="+str(offset)+"-"+ ("" if length is None else str(offset+length))}
+                data, response = http_helpers.direct_http_req(location, "GET", return_full_response=True, headers=headers)
+                if response.status != 206:
+                    raise MashupCloudOperationException('Download failed')
+                return data
+            else:
+                raise MashupCloudOperationException('Download failed')
+        return self.request_template(action)
+
     def remove(self, file_path):
         def action():
             return self.http_req("DELETE", 'drive/special/approot:/'+file_path)

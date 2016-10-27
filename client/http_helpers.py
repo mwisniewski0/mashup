@@ -1,4 +1,5 @@
 import http.client, urllib.parse
+import ssl
 
 
 def start_connection(address):
@@ -8,7 +9,7 @@ def start_connection(address):
     if protocol == 'http':
         return http.client.HTTPConnection(address)
     elif protocol == 'https':
-        return http.client.HTTPSConnection(address)
+        return http.client.HTTPSConnection(address, context=ssl._create_unverified_context())
     else:
         raise Exception('Address does not contain the protocol')
 

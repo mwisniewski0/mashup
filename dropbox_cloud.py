@@ -39,6 +39,9 @@ class Dropbox(cloud_account.CloudAccount):
     def authenticate(self, authentication_data):
         self.account_token = authentication_data.decode('utf-8')
         self.dbx = dropbox.Dropbox(self.account_token)
+
+        # API V1 is required for range retrieval
+        self.dbx_v1 = dropbox.client.DropboxClient(self.account_token)
         try:
             user_data = self.dbx.users_get_current_account()
             print('Authenticated on Dropbox: ', user_data)
@@ -53,6 +56,13 @@ class Dropbox(cloud_account.CloudAccount):
         except dropbox.exceptions.AuthError as e:
             print('Authentication failed')
             raise MashupAccessException("Authentication for Dropbox failed")
+        except Exception as e:
+            raise MashupCloudOperationException("Download from Dropbox has failed")
+
+    def download_part(self, file_path, offset=0, length=None):
+        try:
+            with self.dbx_v1.get_file(self.get_mashup_path(file_path), start=offset, length=length) as f:
+                return f.read()
         except Exception as e:
             raise MashupCloudOperationException("Download from Dropbox has failed")
 
@@ -88,7 +98,9 @@ class Dropbox(cloud_account.CloudAccount):
             print('Authentication failed')
             raise MashupAccessException("Authentication for Dropbox failed")
         except Exception as e:
-            raise MashupCloudOperationException("Preparing Dropbox for service use has failed")
+            raise MashupCloudOperationException("Preparing Dropbox for service use has failed.\n"
+                                                "Did you use this cloud account for MashUp before?\n"
+                                                "If so, try to remove __mashup__files__ from your Dropbox")
 
     def clean_mashup(self):
         try:
