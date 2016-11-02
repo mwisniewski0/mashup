@@ -1,10 +1,13 @@
 TODO:
 [ FIXED ] Don't create file duplicates
 [ FIXED ] Don't list files in catalogs until they are finished uploading
-Check if there is enough space to upload files
+[ FIXED ] Check if there is enough space to upload files
 Change from processes to threads
 Set up locking system for multiple threads
 Expand number of threads
 The same cloud can be added twice
 In dropbox_cloud and onedrive_cloud - url encoding paths might be necessary
 Move permissions to a separate database
+When a server dies and there are upload sessions in place, they will become corrupted (there will be an unuploaded file without a correspoding session) -
+
+In the client, cancel unsuccessful sessions.

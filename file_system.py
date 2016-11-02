@@ -130,9 +130,9 @@ class FileSystem:
         else:
             raise MashupBadRequestException("This method is not supported for file system calls")
 
-    def list_folder(self, folder_id):
+    def list_folder(self, folder_id, username):
         c = self.db.cursor()
-        c.execute("SELECT name, type FROM fs_items WHERE parent=? AND uploaded=1 ORDER BY name", (folder_id,))
+        c.execute("SELECT name, type FROM fs_items WHERE parent=? AND username=? AND uploaded=1 ORDER BY name", (folder_id, username))
         children = c.fetchall()
         c.close()
         self.db.commit()
@@ -201,9 +201,11 @@ class FileSystem:
         return int(size)
 
     def retrieve(self, session_id, path, byte_start = 0, length = float('inf')):
+        username = globals.get_resource("modules").authenticator.derive_username_from_session_id(session_id)
+
         result = self.get_item(session_id, path)
         if result['is_folder']:
-            return Response.from_json(self.list_folder(result['id']))
+            return Response.from_json(self.list_folder(result['id'], username))
         else:
             r = Response.from_binary(self.retrieve_file_fragment(session_id, result['id'], byte_start, length))
             r.headers['X_FILE_SIZE'] = str(self.get_file_size(result['id']))

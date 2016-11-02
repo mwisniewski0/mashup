@@ -246,9 +246,10 @@ class FileSystemClient:
                     http_helpers.auth_http_req(self.conn, self.ses_id, "PUT", "files/" + "/".join(remote_path),
                                                b'', {'session_action': 'end', 'item_type': 'file'})
                     print('\rUpload finished')
-            except Exception:
-                #traceback.print_exc()
+            except Exception as e:
                 print("\rUpload failed")
+                if (len(e.args) > 1 and isinstance(e.args[1], str)):
+                    print("Additional information: " + e.args[1])
 
     def print_help_string(self):
         print("Available commands:\n"

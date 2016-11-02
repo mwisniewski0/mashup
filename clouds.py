@@ -58,16 +58,23 @@ class CloudsManager:
         else:
             raise MashupBadRequestException("No calls are allowed on root cloud resource")
 
-    def upload_anywhere(self, session_id, chunk):
+    def choose_cloud_for_upload(self, session_id, upload_size):
         clouds = self.list_clouds(session_id, True)
         smallest_ratio = float('inf')
         id_of_smallest = None
         for cloud in clouds:
-            ratio = cloud['taken'] / cloud['quota']
-            if ratio < smallest_ratio:
-                smallest_ratio = ratio
-                id_of_smallest = cloud['id']
+            if cloud['quota'] - cloud['taken'] > upload_size:
+                ratio = cloud['taken'] / cloud['quota']
+                if ratio < smallest_ratio:
+                    smallest_ratio = ratio
+                    id_of_smallest = cloud['id']
 
+        if id_of_smallest is None:
+            raise MashupBadRequestException("Upload is not possible due to cloud space constraints. Add a new cloud or modify your quota.")
+        return id_of_smallest
+
+    def upload_anywhere(self, session_id, chunk):
+        id_of_smallest = self.choose_cloud_for_upload(session_id, len(chunk))
         cloud = self.session_clouds[session_id][id_of_smallest]
         def generate_name(allowed_chars, length):
             name = ""
