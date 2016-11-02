@@ -58,8 +58,17 @@ class CloudsManager:
         else:
             raise MashupBadRequestException("No calls are allowed on root cloud resource")
 
-    def upload_anywhere(self, session_id, cloud_id, chunk):
-        cloud = self.session_clouds[session_id][cloud_id]
+    def upload_anywhere(self, session_id, chunk):
+        clouds = self.list_clouds(session_id, True)
+        smallest_ratio = float('inf')
+        id_of_smallest = None
+        for cloud in clouds:
+            ratio = cloud['taken'] / cloud['quota']
+            if ratio < smallest_ratio:
+                smallest_ratio = ratio
+                id_of_smallest = cloud['id']
+
+        cloud = self.session_clouds[session_id][id_of_smallest]
         def generate_name(allowed_chars, length):
             name = ""
             for i in range(length):
@@ -69,9 +78,9 @@ class CloudsManager:
             else:
                 return name
 
-        name = generate_name("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", 16)
+        name = generate_name("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890", 24)
         cloud.upload(name, chunk)
-        return name
+        return name, id_of_smallest
 
     def list_clouds(self, session_id, fetch_taken_space=True):
         authenticator = globals.get_resource("modules").authenticator

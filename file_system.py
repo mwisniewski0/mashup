@@ -22,7 +22,7 @@ class FileSystem:
             c.execute("SELECT id, type FROM fs_items WHERE parent=? AND name=? AND username=?", (parent_id, name, username))
             previous_file = c.fetchall()
             if (len(previous_file) == 0):
-                c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, \"file\")", (parent_id, name, username))
+                c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, \"file\", 0)", (parent_id, name, username))
                 file_id = c.lastrowid
             else:
                 raise MashupBadRequestException("File already exists. Try removing it first")
@@ -41,22 +41,17 @@ class FileSystem:
         def close(self, upload_last_chunk=True):
             self.commit_chunk(self.queued_data)
             self.queued_data = b''
+            c = self.db.cursor()
+            c.execute("UPDATE fs_items SET uploaded=1 WHERE id=?",(self.id,))
+            c.close()
+            self.db.commit()
 
         def commit_chunk(self, chunk):
             modules = globals.get_resource("modules")
             clouds_manager = modules.clouds_manager
             fs = modules.file_system
 
-            clouds = clouds_manager.list_clouds(self.session_id, True)
-            smallest_ratio = 2.0
-            id_of_smallest = None
-            for cloud in clouds:
-                ratio = cloud['taken'] / cloud['quota']
-                if ratio < smallest_ratio:
-                    smallest_ratio = ratio
-                    id_of_smallest = cloud['id']
-
-            path = clouds_manager.upload_anywhere(self.session_id, id_of_smallest, chunk)
+            path, id_of_smallest = clouds_manager.upload_anywhere(self.session_id, chunk)
             c = self.db.cursor()
             c.execute("INSERT INTO fs_disassembly VALUES (?, ?, ?, ?, ?)",
                       (self.id, self.current_last_byte, len(chunk), id_of_smallest, path))
@@ -70,7 +65,7 @@ class FileSystem:
         self.upload_sessions = {}
 
         c = self.db.cursor()
-        c.execute("CREATE TABLE IF NOT EXISTS fs_items (id INTEGER PRIMARY KEY AUTOINCREMENT, parent INTEGER, name TEXT, username TEXT, type TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS fs_items (id INTEGER PRIMARY KEY AUTOINCREMENT, parent INTEGER, name TEXT, username TEXT, type TEXT, uploaded INTEGER)")
         c.execute("CREATE TABLE IF NOT EXISTS fs_disassembly (file_id, offset INTEGER, len INTEGER, cloud_id INTEGER, path TEXT)")
         c.close()
         self.db.commit()
@@ -81,7 +76,7 @@ class FileSystem:
                 self.cancel_upload_session(session_id, k)
             del self.upload_sessions[session_id]
         else:
-            return MashupBadRequestException("Session does not exist")
+            return MashupBadRequestException("The upload session does not exist")
 
     def get_root_id(self):
         return -1
@@ -137,7 +132,7 @@ class FileSystem:
 
     def list_folder(self, folder_id):
         c = self.db.cursor()
-        c.execute("SELECT name, type FROM fs_items WHERE parent=? ORDER BY name", (folder_id,))
+        c.execute("SELECT name, type FROM fs_items WHERE parent=? AND uploaded=1 ORDER BY name", (folder_id,))
         children = c.fetchall()
         c.close()
         self.db.commit()
@@ -214,7 +209,7 @@ class FileSystem:
             r.headers['X_FILE_SIZE'] = str(self.get_file_size(result['id']))
             return r
 
-    def get_item(self, session_id, path, root_id=None, throw_on_not_found = True):
+    def get_item(self, session_id, path, root_id=None, throw_on_not_found = True, throw_on_unuploaded = True):
         if root_id is None:
             root_id = self.get_root_id()
 
@@ -225,7 +220,7 @@ class FileSystem:
         username = authenticator.derive_username_from_session_id(session_id)
 
         c = self.db.cursor()
-        c.execute("SELECT id, type FROM fs_items WHERE name=? AND parent=? AND username=?", (path[0], root_id, username))
+        c.execute("SELECT id, type, uploaded FROM fs_items WHERE name=? AND parent=? AND username=?", (path[0], root_id, username))
         rows = c.fetchall()
         if len(rows) == 0:
             if throw_on_not_found:
@@ -233,6 +228,9 @@ class FileSystem:
             else:
                 return None
         item_id = rows[0][0]
+        if rows[0][2] == 0 and throw_on_unuploaded:
+            raise MashupBadRequestException("Item is still being uploaded")
+
         c.close()
         self.db.commit()
 
@@ -271,7 +269,7 @@ class FileSystem:
 
         c = self.db.cursor()
         for folder in folders_to_create:
-            c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, \"folder\")", (parent_id, folder, username))
+            c.execute("INSERT INTO fs_items VALUES (NULL, ?, ?, ?, \"folder\", 1)", (parent_id, folder, username))
             parent_id = c.lastrowid
         c.close()
         self.db.commit()
